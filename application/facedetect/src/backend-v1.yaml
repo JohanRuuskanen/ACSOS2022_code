@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-v1
+  namespace: facedetect-do
+  labels:
+    app: backend-v1
+    service: backend-v1
+spec:
+  ports:
+  - name: http #-backend
+    port: 5001
+    targetPort: http
+    #protocol: TCP
+  selector:
+    app: backend-v1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-v1
+  namespace: facedetect-do
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-v1
+  template:  
+    metadata:
+      labels:
+        app: backend-v1
+    spec:
+      imagePullSecrets:
+        - name: gitlab-auth
+      containers:
+        - name:  backend-v1
+          image: registry.gitlab.com/PATH_TO_REGISTRY/backend-do:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5001
+              #protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: backend-v1-dstrule
+  namespace: facedetect-do
+spec:
+  host: backend-v1.facedetect-do.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: RANDOM
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      interval: 10s
+      baseEjectionTime: 6m
+---

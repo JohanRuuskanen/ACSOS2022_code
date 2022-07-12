@@ -1,0 +1,10 @@
+cost_per_ql:
+  backend-v1: 3
+  backend-v2: 2
+  backend-v3: 1
+logfolder: /home/ubuntu/application/facedetect_3b/experiment/logs
+p0:
+- 2.0
+- 0.0
+- 0.0
+tracefolder: /home/ubuntu/application/facedetect_3b/experiment/logs/traces/sample1

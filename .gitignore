@@ -1,0 +1,10 @@
+logs/
+logs_*/
+data/
+results*/
+.vscode
+*.m~
+*.code-workspace
+*.csv
+*.jld
+*.log
