@@ -1,19 +1,19 @@
 using YAML
 
 function run()
-    logfolder = joinpath(@__DIR__, "..", "data", "logs")
+    logfolder = "/home/ubuntu/application/facedetect/experiment/logs"
     lock_file = joinpath(@__DIR__, "lock")
     last_time = mtime(lock_file)
-    p0 = [2.2, 0.0]
+    p0 = 0.95
     while true
         println("Data recorded, sending to julia")
         # Write new data paths
-        pv = exp(p0[1]) / sum(exp, p0)
-        idx = round(Int, 20 * pv) + 1
+        idx = round(Int, 20 * p0) + 1
         YAML.write_file(joinpath(@__DIR__, "input.yaml"), Dict(
             "p0" => p0,
             "logfolder" => logfolder,
-            "tracefolder" => joinpath(logfolder, "traces", "sample$(idx)")
+            "tracefolder" => joinpath(logfolder, "traces", "sample$(idx)"),
+            "cost_per_ql" => Dict("backend-v1" => 3, "backend-v2" => 1)
         ))
         # Signal new data ready
         touch(lock_file)
@@ -26,7 +26,7 @@ function run()
         # Read new p
         input_dict = YAML.load_file(joinpath(@__DIR__, "output.yaml"); dicttype=Dict{String, Any})
         p0 = input_dict["p_next"]
-        println("New p = $(exp.(p0) / sum(exp, p0))")
+        println("New p = $p0")
     end
 end
 
