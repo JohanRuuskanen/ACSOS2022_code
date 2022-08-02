@@ -4,7 +4,7 @@ The code in this repository can be used to reproduce the experimental evaluation
 
 > Albin Heimerson, Johan Ruuskanen, Johan Eker. "Automatic Differentiation over Fluid Models for Holistic Load Balancing", to appear at ACSOS 2022
 
-The experiments are run on the [FedApp sandbox](https://github.com/JohanRuuskanen/FedApp), while the models are extracted and evaluated using `julia-1.7.0`.
+The experiments are run on the [FedApp sandbox](https://github.com/JohanRuuskanen/FedApp), while the models are extracted and evaluated using `julia-1.7.2`.
 
 In order to recreate the figures seen in the paper, you must first deploy the sandbox with the two example application deployments before running the experiments.
 
@@ -14,7 +14,7 @@ In order to recreate the figures seen in the paper, you must first deploy the sa
 
 Access to an OpenStack cloud is required to deploy the sandbox out-of-the-box.  The sandbox can possibly also be deployed on other infrastructures,  but this requires some tinkering. 
 
-Follow the steps in shown in the [sanbox repo](https://github.com/JohanRuuskanen/FedApp), and deploy the gateway with 4 vCPU and 16 Gb of RAM, along with 3 cluster each with 4 virtual machines, each with 4 vCPU and 8 Gb of RAM. 
+Follow the steps in shown in the [sandbox repo](https://github.com/JohanRuuskanen/FedApp), and deploy the gateway with 4 vCPU and 16 Gb of RAM, along with 3 cluster each with 4 virtual machines, each with 4 vCPU and 8 Gb of RAM. 
 
 Finally, using TC netem add two Pareto distributed delays between clusters 1 and 2, and clusters 1 and 3. The delays should be the same in both directions, with the values
 
@@ -28,7 +28,7 @@ Finally, using TC netem add two Pareto distributed delays between clusters 1 and
 
 In the paper, two experiments over two different deployments of the application are considered. The first deployment has 2 replicas of the backend service, and can be found in the `application/facedetect` folder. The second has 3 backend replicas and can be found in the  `application/facedetect_3b` folder.
 
-To deploy the example application on the FedApp sandbox, begin by copying  these  folders to the gateway.
+To deploy the example application on the FedApp sandbox, begin by copying these folders to the home folder on the gateway.
 
 We used the [UMass face detection database](<http://vis-www.cs.umass.edu/fddb/> )  to provide the necessary images for loading the application. Download it and extract it to the `application/data` folder on the gateway.
 
@@ -67,7 +67,7 @@ The application deployment with 2 backend replicas can be reached on port 3002 o
 
 #### Running the experiments
 
-The cost-minimizing algorithm is implemented in `Julia` and  tested with `Julia-1.7.0`. For the plotting, it further requires `Python` with `matplotlib`. To activate the environment and install dependencies, visit the `online_autodiff/` folder, start `Julia` and type
+The cost-minimizing algorithm is implemented in `Julia` and  tested with `Julia-1.7.2`. For the plotting, it further requires `Python` with `matplotlib`. To activate the environment and install dependencies, copy the `online_autodiff/` folder to the home folder on the gateway and change to that directory. Start `Julia` and type
 
 ```Julia
 ] activate .
@@ -92,7 +92,7 @@ When completed, this data can be used to run the offline experiment. To do so, v
 Activate the environment with `] activate .` in both instances. Then, in one instance start the process for the cost-minimizing algorithm with 
 
 ```Julia
-include("online_autodiff.jl")
+include("offline_autodiff.jl")
 ```
 
 When it is done loading (it will print *Waiting for updated values*), start the offline data playback in the other `Julia` instance with 
