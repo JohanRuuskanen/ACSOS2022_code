@@ -140,6 +140,7 @@ function getArrivalDeparture(H::T_H, simSetting::T_simSetting,
     t0, _ = datetime2unix.(getSimExpTimeIntervals(simSetting))
 
     for (i, (q, n, u)) in enumerate(classes)
+
         if queue_type[q] == "ec"
             ta_class[i] = zeros(0)
             td_class[i] = zeros(0)
@@ -220,6 +221,12 @@ function getArrivalDeparture(H::T_H, simSetting::T_simSetting,
             error("No such queue type")
         end
 
+        # Remove all zero values from ta and similar
+        keep_idx = ta_class[i] .> 0
+        ta_class[i] = ta_class[i][keep_idx]
+        td_class[i] = td_class[i][keep_idx]
+        ri_class[i] = ri_class[i][keep_idx]
+
         @assert length(ta_class[i]) == length(td_class[i]) == 
             length(ri_class[i]) "Not the same number of arrivals and departures"
 
@@ -228,7 +235,17 @@ function getArrivalDeparture(H::T_H, simSetting::T_simSetting,
         td_class[i] = td_class[i][sortidx]
         ri_class[i] = ri_class[i][sortidx]
 
-        @assert all(ta_class[i] .<= td_class[i]) "Departure before arrival"
+        ok_idx = ta_class[i] .<= td_class[i]
+        if !all(ok_idx)
+            
+            printstyled("Warning, departures before arrival\n", color=:red)
+            printstyled("\tremoving $(round((length(ok_idx) - sum(ok_idx)) 
+                / length(ta_class[i]) * 100, digits=2)) %\n", color=:red)
+
+            ta_class[i] = ta_class[i][ok_idx]
+            td_class[i] = td_class[i][ok_idx]
+            ri_class[i] = ri_class[i][ok_idx]
+        end
         @assert length(unique(ri_class[i])) == length(ri_class[i])
     end
     

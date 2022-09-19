@@ -217,6 +217,12 @@ function g_smooth(x, c, p)
     return 1 / norm([1, x/c], p)
 end
 
+function g_smooth2(x, c, p)
+    #z = 
+    #println(z - 1 / norm([1, x/c], p))
+    return 1 / ((1 + (max(x, 0)/c)^p)^(1/p))
+end
+
 tr_cdf(t, Ψ, ps, ζ) = 1 .- sum(exp(ps*Ψ'*t)*ζ)
 tr_cdf(t, Wb, ps, A, β) = (1 .- (A*β)' * exp(Diagonal(ps) * Wb * t) * 
     ones(size(A, 1), 1))[1]
@@ -255,7 +261,7 @@ function dx_fluid!(dx, x, dx_params, t)
     for i in 1:length(M)
         tmpq[M[i]] += x[i]
     end
-    tmpq .= g_smooth.(tmpq, K, p_smooth)
+    tmpq .= g_smooth2.(tmpq, K, p_smooth)
     for i in 1:length(M)
         tmpps[i] = x[i] * tmpq[M[i]]
     end
@@ -266,10 +272,7 @@ function dx_fluid!(dx, x, dx_params, t)
 end
 
 function solveFluidModel(params; solver=Tsit5())
-    Ψ, A, B, P, λ, M, K, p_smooth = params
-   
-    # Extract the type from the type field in P
-    T = eltype(P)
+    Ψ, A, B, P, λ, M, K, p_smooth, T = params
 
     # Precalc to avoid having to do it inside
     W =  Ψ + B*P*A'
@@ -277,6 +280,7 @@ function solveFluidModel(params; solver=Tsit5())
     dx_params = (A, W, M, K, p_smooth, λ, zeros(T, length(K)), zeros(T, length(M)))
     tspan = (0.0, 5.0)
     x0 = zeros(T, length(M))
+    x0[1] = 50
 
     prob = ODEProblem(dx_fluid!, x0, tspan, dx_params)
     sol = solve(prob, solver)
@@ -285,20 +289,23 @@ function solveFluidModel(params; solver=Tsit5())
 end
 
 # Can be both calculated with closed form and as an ODE solution
-function estimate_p95(params; xf=[], solver=Tsit5(), closed_form=false)
-    Ψ, A, B, P, λ, M, K, p_smooth = params
-    T = eltype(P)
+function estimate_p95(params, β; sol_xf=[], solver=Tsit5(), closed_form=false)
+    Ψ, A, B, P, _, M, K, p_smooth, T = params
 
-    if isempty(xf)
+    if isempty(sol_xf)
         sol_xf = solveFluidModel(params; solver)
-        xf = [sum(sol_xf.u[end][M .== i], dims=1)[1] for i in 1:length(K)]
     end
+    xf = [sum(sol_xf.u[end][M .== i], dims=1)[1] for i in 1:length(K)]
 
     ps = g_smooth.(xf[M], K[M], p_smooth[M])
 
-    # Since Cr includes all classes, we can obtain the p95 matrices directly
-    Wb = Ψ + B * P * A'
-    β = normalize(λ, 1)
+    # remove all return connections to the client queue
+    Pb = copy(P)
+    for i in findall(β .> 0)
+        Pb[:, 1] .= 0
+    end
+
+    Wb = Ψ + B * Pb * A'
 
     if closed_form
         return findQuantile(t -> tr_cdf(t, Wb, ps, A, β), 0.95, x0=0.1)

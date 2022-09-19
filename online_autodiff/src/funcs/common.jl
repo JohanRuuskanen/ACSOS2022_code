@@ -98,6 +98,32 @@ function stepIndices(t::Vector{T}, steps::Vector{T}; lag=0) where T <: Number
     return ind
 end
 
+function replace_ip(x::T, ipmap::Dict) where T <: Vector
+    return [replace_ip(y, ipmap) for y in x]
+end
+
+function replace_ip(x, ipmap::Dict)
+
+    replace(e) = haskey(ipmap, e) ? ipmap[e] : e
+
+    if typeof(x) <: Tuple
+        x_noip = Vector{Any}(undef, length(x))
+        for (i, e) in enumerate(x)
+            if typeof(e) <: Tuple
+                x_noip[i] = replace_ip(e, ipmap)
+            else
+                x_noip[i] = replace(e)
+            end
+        end
+
+        return Tuple(x_noip)
+    else 
+        return replace(x)
+    end
+
+end
+
+
 # Get all the indices as bools of occurances of t in the given steps. Assumes 
 # that t is sorted
 function stepIndicesSorted(t::Vector{T}, steps::Vector{T}; lag=0) where T <: Number

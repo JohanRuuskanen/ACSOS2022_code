@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: facedetect-3b3s
+  labels:
+    istio-injection: enabled
+---

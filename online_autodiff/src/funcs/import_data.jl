@@ -106,6 +106,44 @@ function readLoadGenData(loadgenfiles::Vector{Vector{String}}, simSettings::Vect
     return df_load
 end
 
+# Reads all loadgenerator files assuming a single simulation
+function readLoadGenData(loadgenfiles::Vector{String}, simSettings::Dict{String, Dict{String, Any}})
+
+    # Extract load generator dataframes
+    df_load = Dict{String, DataFrame}()
+    for lg_file in loadgenfiles
+        df_load[split(split(lg_file, "_")[end], ".")[1]] = CSV.read(lg_file, DataFrame) 
+    end
+
+    # Extract the load generator identifiers
+    lgs = collect(keys(df_load))
+
+    failures = Dict{String, DataFrame}()
+    missing_vals = Dict{String, DataFrame}()
+    for lg in lgs
+        df = df_load[lg]
+        df.ts_arrival = unix2datetime.(df.ts_arrival)
+        df.ts_departure = unix2datetime.(df.ts_departure)
+        df.ts_response = unix2datetime.(df.ts_response)
+
+        failures[lg] = df[df.status .!= 200, :]
+        missing_vals[lg] = df[.!completecases(df), :]
+
+        df = df[completecases(df) .& (df.status .== 200), :]
+        df_load[lg] = df
+
+        # Test load generator data
+        @assert all(df.ts_arrival .>= DateTime(0))
+        @assert length(df.req_id) == length(unique(df.req_id))
+        @assert all(df.ts_arrival .<= df.ts_departure)
+        @assert all(df.ts_departure .<= df.ts_response)
+        @assert datetime2unix(minimum(df.ts_arrival)) - 
+            datetime2unix(simSettings[lg]["experimentTime"][1]) > -1
+    end
+
+    return df_load
+end
+
 # Return the connection types per row in the given dataframe
 function getConnectionTypes(df::DataFrame)
     return (x -> ismissing(x) ? x : split(x, "|")[1]).(df.upstream_cluster)
